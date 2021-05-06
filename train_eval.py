@@ -2,7 +2,10 @@ import math
 import torch.optim as optim
 import torch
 import numpy as np
+
 np.seterr(divide='ignore', invalid='ignore')
+torch.backends.cudnn.enabled = False
+
 
 def evaluate(data, X, Y, model, evaluateL2, evaluateL1, args):
     model.eval()
@@ -23,7 +26,7 @@ def evaluate(data, X, Y, model, evaluateL2, evaluateL1, args):
 
         scale = data.scale.expand(output.size(0), data.m)
         total_loss += float(evaluateL2(output * scale, Y * scale).data.item())
-        total_loss_l1 +=float( evaluateL1(output * scale, Y * scale).data.item())
+        total_loss_l1 += float(evaluateL1(output * scale, Y * scale).data.item())
 
         n_samples += int((output.size(0) * data.m))
 
@@ -32,7 +35,7 @@ def evaluate(data, X, Y, model, evaluateL2, evaluateL1, args):
 
     predict = predict.data.cpu().numpy()
     Ytest = test.data.cpu().numpy()
-    sigma_p = (predict).std(axis=0)
+    sigma_p = predict.std(axis=0)
     sigma_g = (Ytest).std(axis=0)
     mean_p = predict.mean(axis=0)
     mean_g = Ytest.mean(axis=0)
@@ -56,8 +59,9 @@ def train(data, X, Y, model, criterion, optim, args):
         torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
         optim.step()
         total_loss += loss.data.item()
-        n_samples +=int( (output.size(0) * data.m))
+        n_samples += int((output.size(0) * data.m))
     return total_loss / n_samples
+
 
 def makeOptimizer(params, args):
     if args.optim == 'sgd':
@@ -71,4 +75,3 @@ def makeOptimizer(params, args):
     else:
         raise RuntimeError("Invalid optim method: " + args.method)
     return optimizer
-
