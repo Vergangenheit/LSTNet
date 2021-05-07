@@ -1,2 +1,5 @@
 torch==1.7.1+cu101
 -f https://download.pytorch.org/whl/torch_stable.html
+pandas==1.2.4
+colorama
+matplotlib==3.3.4

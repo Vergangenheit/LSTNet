@@ -3,10 +3,14 @@ __author__ = "Guan Song Wang"
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from typing import Union
+from utils import Data_utility_df, Data_utility
+from argparse import Namespace
+from torch import Tensor
 
 
 class Model(nn.Module):
-    def __init__(self, args, data):
+    def __init__(self, args: Namespace, data: Union[Data_utility, Data_utility_df]):
         super(Model, self).__init__()
         self.P = args.window
         self.m = data.m
@@ -34,14 +38,14 @@ class Model(nn.Module):
         if args.output_fun == 'tanh':
             self.output = F.tanh
 
-    def forward(self, x):
-        batch_size = x.size(0)
+    def forward(self, x: Tensor):
+        batch_size: int = x.size(0)
 
         # CNN
         c = x.view(-1, 1, self.P, self.m)
         c = F.relu(self.conv1(c))
         c = self.dropout(c)
-        c = torch.squeeze(c, 3)
+        c: Tensor = torch.squeeze(c, 3)
 
         # RNN 
         r = c.permute(2, 0, 1).contiguous()
@@ -49,12 +53,10 @@ class Model(nn.Module):
 
         r = self.dropout(torch.squeeze(r, 0))
 
-
-
         # skip-rnn
 
         if self.skip > 0:
-            self.pt=int(self.pt)
+            self.pt = int(self.pt)
             s = c[:, :, int(-self.pt * self.skip):].contiguous()
 
             s = s.view(batch_size, self.hidC, self.pt, self.skip)
@@ -63,13 +65,12 @@ class Model(nn.Module):
             _, s = self.GRUskip(s)
             s = s.view(batch_size, self.skip * self.hidS)
             s = self.dropout(s)
-            r = torch.cat((r, s), 1)
+            r: Tensor = torch.cat((r, s), 1)
 
         res = self.linear1(r)
 
         # highway
         if self.hw > 0:
-
             z = x[:, -self.hw:, :]
             z = z.permute(0, 2, 1).contiguous().view(-1, self.hw)
             z = self.highway(z)
